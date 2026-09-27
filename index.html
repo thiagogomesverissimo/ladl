@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LADs - Learning Analytics Dashboards</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="h-full text-slate-800 antialiased flex flex-col" x-data="dashboardApp()" x-init="init()">
+
+    <!-- Cabeçalho Principal -->
+    <header class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-3">
+                        <span class="p-2 bg-indigo-500/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+                            <i class="fa-solid fa-chart-line text-xl"></i>
+                        </span>
+                        <h1 class="text-2xl font-bold tracking-tight text-white">Learning Analytics Dashboards Library</h1>
+                    </div>
+                </div>
+
+                <!-- Busca Textual -->
+                <div class="relative w-full md:w-80">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                    <input type="text" x-model="searchQuery" @input="applyFilters()"
+                           placeholder="Buscar por título, autor, ID..." 
+                           class="w-full pl-10 pr-4 py-2 bg-slate-800/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+
+        <!-- Painel de Filtros -->
+        <section class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 transition">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-filter text-indigo-600"></i>
+                    <h2 class="font-semibold text-slate-800 text-sm">Filtros de Pesquisa</h2>
+                </div>
+                <button @click="resetFilters()" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5 transition">
+                    <i class="fa-solid fa-rotate-left"></i> Limpar Filtros
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 text-xs">
+                <!-- Target -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Target</label>
+                    <select x-model="filters.target" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos</option>
+                        <template x-for="opt in filterOptions.target" :key="opt">
+                            <option :value="opt" x-text="opt"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Code Available -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Code Available</label>
+                    <select x-model="filters.code_available" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="all">Tanto faz</option>
+                        <option value="available">Campo preenchido</option>
+                        <option value="unavailable">Campo vazio</option>
+                    </select>
+                </div>
+
+                <!-- Machine Learning -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Machine Learning</label>
+                    <select x-model="filters.machine_leaning" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos</option>
+                        <template x-for="opt in filterOptions.machine_leaning" :key="opt">
+                            <option :value="opt" x-text="opt === 'true' ? 'True' : 'False'"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Data Source -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Data Source</label>
+                    <select x-model="filters.data_source" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos</option>
+                        <template x-for="opt in filterOptions.data_source" :key="opt">
+                            <option :value="opt" x-text="opt"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- AVA -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">AVA</label>
+                    <select x-model="filters.ava" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos</option>
+                        <template x-for="opt in filterOptions.ava" :key="opt">
+                            <option :value="opt" x-text="opt"></option>
+                        </template>
+                    </select>
+                </div>
+
+                <!-- Techniques -->
+                <div>
+                    <label class="block font-semibold text-slate-600 mb-1.5">Technique</label>
+                    <select x-model="filters.techniques" @change="applyFilters()" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todas</option>
+                        <template x-for="opt in filterOptions.techniques" :key="opt">
+                            <option :value="opt" x-text="opt"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- Painel de Sumarização Dinâmica -->
+        <section class="bg-indigo-900/5 rounded-2xl border border-indigo-100 p-5">
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-chart-pie text-indigo-700"></i>
+                <h3 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Sumarização dos Resultados Filtrados</h3>
+            </div>
+            <p class="mb-3 text-xs text-slate-600">Quantidade de artigos encontrados no OpenAlex com o termo <span class="font-semibold">Learning analytics dashboard</span> até 2026: <strong>680</strong></p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3 text-xs">
+                <!-- Total Card -->
+                <div class="bg-white p-3 rounded-xl border border-indigo-200/60 shadow-xs flex flex-col justify-center items-center text-center">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase">Totais</span>
+                    <span class="text-xl font-extrabold text-indigo-600 mt-0.5" x-text="summary.articlesCount">0</span>
+                    <span class="text-[10px] font-medium text-slate-500" x-text="summary.articlesCount === 1 ? 'artigo' : 'artigos'"></span>
+                    <span class="text-[10px] text-slate-400 mt-1" x-text="summary.imagesCount + ' imagens'"></span>
+                </div>
+
+                <!-- Target Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Target</span>
+                    <div class="space-y-1 overflow-y-auto max-h-16">
+                        <template x-for="(count, k) in summary.target" :key="k">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-slate-600 capitalize truncate" x-text="k"></span>
+                                <span class="font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Code Available Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Code Available</span>
+                    <div class="py-1 text-center">
+                        <span class="text-xl font-extrabold text-indigo-600" x-text="summary.codeAvailableArticlesCount">0</span>
+                        <span class="block text-[10px] text-slate-500">artigos</span>
+                    </div>
+                </div>
+
+                <!-- ML Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Machine Learning</span>
+                    <div class="space-y-1 overflow-y-auto max-h-16">
+                        <template x-for="(count, k) in summary.machine_leaning" :key="k">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-slate-600 truncate" x-text="k === 'true' ? 'True' : 'False'"></span>
+                                <span class="font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Data Source Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Data Source</span>
+                    <div class="space-y-1 overflow-y-auto max-h-16">
+                        <template x-for="(count, k) in summary.data_source" :key="k">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-slate-600 truncate" x-text="k"></span>
+                                <span class="font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- AVA Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">AVA</span>
+                    <div class="space-y-1 overflow-y-auto max-h-16">
+                        <template x-for="(count, k) in summary.ava" :key="k">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-slate-600 truncate" x-text="k"></span>
+                                <span class="font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <!-- Techniques Breakdown -->
+                <div class="bg-white p-3 rounded-xl border border-slate-200/70 shadow-xs">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase block mb-1">Techniques</span>
+                    <div class="space-y-1 overflow-y-auto max-h-16">
+                        <template x-for="(count, k) in summary.techniques" :key="k">
+                            <div class="flex justify-between items-center text-[11px]">
+                                <span class="text-slate-600 truncate" x-text="k"></span>
+                                <span class="font-bold text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded" x-text="count"></span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Lista de Artigos e Carrosséis -->
+        <section class="space-y-6">
+            <template x-if="filteredArticles.length === 0">
+                <div class="bg-white rounded-2xl p-12 text-center border border-slate-200">
+                    <i class="fa-regular fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                    <h3 class="text-slate-700 font-bold text-base">Nenhum artigo corresponde aos filtros</h3>
+                    <p class="text-slate-500 text-xs mt-1">Tente ajustar ou limpar os seletores acima.</p>
+                </div>
+            </template>
+
+            <template x-for="article in filteredArticles" :key="article.id">
+                <article class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden hover:shadow-md transition">
+                    <!-- Cabeçalho do Artigo -->
+                    <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                        <div class="flex flex-wrap items-start justify-between gap-3 mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-indigo-600 text-white text-xs font-bold px-2.5 py-1 rounded-md" x-text="'#' + article.id"></span>
+                                <span class="bg-slate-200 text-slate-700 text-xs font-semibold px-2.5 py-1 rounded-md" x-text="article.year"></span>
+                            </div>
+                            
+                            <template x-if="article.doi">
+                                <a :href="article.doi.startsWith('http') ? article.doi : 'https://doi.org/' + article.doi" 
+                                   target="_blank" 
+                                   class="inline-flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-medium bg-indigo-50 hover:bg-indigo-100 px-3 py-1 rounded-lg transition">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> DOI Link
+                                </a>
+                            </template>
+                            <template x-if="article.urlcode">
+                                <a :href="article.urlcode" target="_blank" rel="noopener noreferrer"
+                                   class="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 font-medium bg-emerald-50 hover:bg-emerald-100 px-3 py-1 rounded-lg transition">
+                                    <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i> Code Link
+                                </a>
+                            </template>
+                        </div>
+
+                        <h3 class="text-base sm:text-lg font-bold text-slate-900 leading-snug" x-text="article.title"></h3>
+                        
+                        <div class="flex items-center gap-2 mt-2 text-xs text-slate-600">
+                            <i class="fa-solid fa-user-pen text-slate-400"></i>
+                            <span x-text="article.authors"></span>
+                        </div>
+                    </div>
+
+                    <!-- Carrossel de Imagens do Artigo -->
+                    <div class="p-6 bg-slate-50/20" x-data="{
+                        scrollLeft() { $refs.carousel.scrollBy({ left: -320, behavior: 'smooth' }) },
+                        scrollRight() { $refs.carousel.scrollBy({ left: 320, behavior: 'smooth' }) }
+                    }">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold uppercase tracking-wider text-slate-500">
+                                Imagens do Artigo (<span x-text="article.matchingImages.length"></span>)
+                            </span>
+                            
+                            <!-- Botões do Carrossel -->
+                            <div class="flex items-center gap-1.5" x-show="article.matchingImages.length > 1">
+                                <button @click="scrollLeft()" class="p-1.5 text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-xs transition">
+                                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                                </button>
+                                <button @click="scrollRight()" class="p-1.5 text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg shadow-xs transition">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div x-ref="carousel" class="flex gap-4 overflow-x-auto pb-3 snap-x snap-mandatory no-scrollbar">
+                            <template x-for="img in article.matchingImages" :key="img.image_code">
+                                <div class="snap-start flex-none w-80 bg-white rounded-xl border border-slate-200 p-4 shadow-xs hover:border-indigo-300 transition flex flex-col justify-between">
+                                    <div>
+                                        <!-- Imagem do Carrossel -->
+                                        <div class="relative h-48 bg-slate-100 rounded-lg overflow-hidden border border-slate-100 group cursor-pointer mb-3"
+                                             @click="openModal(img, article)">
+                                            <img :src="'images/' + img.file_name" 
+                                                 :alt="img.image_code" 
+                                                 class="w-full h-full object-contain group-hover:scale-105 transition duration-300"
+                                                 @error="$el.parentElement.innerHTML = '<div class=\'flex items-center justify-center h-full text-xs font-medium text-slate-400\'><i class=\'fa-regular fa-image mr-1.5\'></i> ' + img.image_code + '</div>'">
+                                            <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-xs font-semibold gap-1.5">
+                                                <i class="fa-solid fa-expand"></i> Ampliar
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between mb-3">
+                                            <span class="text-xs font-extrabold text-slate-800" x-text="'Código: ' + img.image_code"></span>
+                                        </div>
+
+                                        <!-- Tabela de Atributos -->
+                                        <div class="space-y-1.5 text-[11px] border-t border-slate-100 pt-2.5">
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 font-medium">Target:</span>
+                                                <span class="font-semibold text-slate-700 capitalize" x-text="img.target || '-'"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 font-medium">Code Avail:</span>
+                                                <span class="font-semibold" :class="article.urlcode ? 'text-emerald-600' : 'text-slate-600'" x-text="article.urlcode ? 'Yes' : 'No'"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 font-medium">Machine Learning:</span>
+                                                <span class="font-semibold" :class="img.machine_leaning === 'true' ? 'text-emerald-600' : 'text-slate-600'" x-text="img.machine_leaning"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 font-medium">Data Source:</span>
+                                                <span class="font-semibold text-slate-700" x-text="img.data_source || '-'"></span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span class="text-slate-400 font-medium">AVA:</span>
+                                                <span class="font-semibold text-slate-700" x-text="img.ava || '-'"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Badges de Técnicas -->
+                                    <div class="mt-3 pt-2 border-t border-slate-100 flex flex-wrap gap-1">
+                                        <template x-for="tech in img.techniques" :key="tech">
+                                            <span class="bg-slate-100 text-slate-600 text-[10px] font-medium px-2 py-0.5 rounded-md" x-text="tech"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </article>
+            </template>
+        </section>
+
+    </main>
+
+    <!-- Modal Lightbox da Imagem -->
+    <div x-cloak x-show="modalOpen" 
+         class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/80 backdrop-blur-xs flex items-center justify-center p-4"
+         @keydown.escape.window="modalOpen = false">
+        <div class="bg-white rounded-2xl max-w-4xl w-full overflow-hidden shadow-2xl border border-slate-200" @click.away="modalOpen = false">
+            <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                <div>
+                    <h4 class="font-bold text-sm" x-text="'Imagem ' + selectedImg.image_code"></h4>
+                    <p class="text-xs text-slate-300 truncate max-w-md" x-text="selectedArticle.title"></p>
+                </div>
+                <button @click="modalOpen = false" class="p-2 text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Imagem Ampliada -->
+                <div class="md:col-span-2 bg-slate-100 rounded-xl p-2 flex items-center justify-center min-h-[300px]">
+                    <img :src="'images/' + selectedImg.file_name" :alt="selectedImg.image_code" class="max-h-[70vh] object-contain rounded-lg">
+                </div>
+
+                <!-- Detalhes e Atributos -->
+                <div class="space-y-4">
+                    <h5 class="font-bold text-xs uppercase tracking-wider text-slate-400">Atributos da Imagem</h5>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                            <span class="text-slate-400 font-medium block">Target</span>
+                            <span class="font-bold text-slate-800 capitalize" x-text="selectedImg.target || '-'"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                            <span class="text-slate-400 font-medium block">Code Available</span>
+                            <span class="font-bold text-slate-800" x-text="selectedArticle.urlcode ? 'Yes' : 'No'"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                            <span class="text-slate-400 font-medium block">Machine Learning</span>
+                            <span class="font-bold text-slate-800" x-text="selectedImg.machine_leaning"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                            <span class="text-slate-400 font-medium block">Data Source</span>
+                            <span class="font-bold text-slate-800" x-text="selectedImg.data_source || '-'"></span>
+                        </div>
+                        <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/60">
+                            <span class="text-slate-400 font-medium block">AVA</span>
+                            <span class="font-bold text-slate-800" x-text="selectedImg.ava || '-'"></span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-slate-400 font-medium text-xs block mb-1.5">Técnicas</span>
+                        <div class="flex flex-wrap gap-1">
+                            <template x-for="tech in selectedImg.techniques" :key="tech">
+                                <span class="bg-indigo-50 text-indigo-700 text-xs font-semibold px-2.5 py-1 rounded-md border border-indigo-100" x-text="tech"></span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function dashboardApp() {
+            return {
+                rawArticles: [{"id": "1", "title": "Learning Analytics Dashboard Applications", "authors": "Katrien Verbert, Erik Duval, Joris Klerkx, Sten Govaerts, José Luis Santos", "year": "2013", "doi": "https://doi.org/10.1177/0002764213479363", "urlcode": "", "images": [{"image_code": "1-3", "file_name": "1-3.png", "target": "teacher", "machine_leaning": "true", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "3", "title": "Review of Research on Student-Facing Learning Analytics Dashboards and Educational Recommender Systems", "authors": "Robert Bodily, Katrien Verbert", "year": "2017", "doi": "https://doi.org/10.1109/tlt.2017.2740172", "urlcode": "", "images": [{"image_code": "3-2", "file_name": "3-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "blackboard"}, {"image_code": "3-3", "file_name": "3-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "5", "title": "Learning analytics dashboard: a tool for providing actionable insights to learners", "authors": "Teo Sušnjak, Gomathy Suganya Ramaswami, Anuradha Mathrani", "year": "2022", "doi": "https://doi.org/10.1186/s41239-021-00313-7", "urlcode": "", "images": [{"image_code": "5-3", "file_name": "5-3.png", "target": "student", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "9", "title": "LADA: A learning analytics dashboard for academic advising", "authors": "Francisco Luís Gutiérrez Vela, Karsten Seipp, Xavier Ochôa, Katherine Chiluiza, Tinne De Laet, Katrien Verbert", "year": "2018", "doi": "https://doi.org/10.1016/j.chb.2018.12.004", "urlcode": "github-teste", "images": [{"image_code": "9-7", "file_name": "9-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "9-10", "file_name": "9-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "9-11", "file_name": "9-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "11", "title": "Learning Analytics Dashboards to Support Adviser-Student Dialogue", "authors": "Sven Charleer, Andrew Vande Moere, Joris Klerkx, Katrien Verbert, Tinne De Laet", "year": "2017", "doi": "https://doi.org/10.1109/tlt.2017.2720670", "urlcode": "", "images": [{"image_code": "11-7", "file_name": "11-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "11-8", "file_name": "11-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "12", "title": "Learning analytics dashboards for adaptive support in face-to-face collaborative argumentation", "authors": "Jeongyun Han, Kwan Hoon Kim, Wonjong Rhee, Young Hoan Cho", "year": "2020", "doi": "https://doi.org/10.1016/j.compedu.2020.104041", "urlcode": "", "images": [{"image_code": "12-51", "file_name": "12-51.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "15", "title": "Designing in Context: Reaching Beyond Usability in Learning Analytics Dashboard Design", "authors": "June Ahn, Fabio Campos, Maria Hays, Daniela Kruel DiGiacomo", "year": "2019", "doi": "https://doi.org/10.18608/jla.2019.62.5", "urlcode": "", "images": [{"image_code": "15-12", "file_name": "15-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "15-18", "file_name": "15-18.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "17", "title": "Factors that affect the success of learning analytics dashboards", "authors": "Yeonjeong Park, Il‐Hyun Jo", "year": "2019", "doi": "https://doi.org/10.1007/s11423-019-09693-0", "urlcode": "", "images": [{"image_code": "17-3", "file_name": "17-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "18", "title": "An integrated framework for course adapted student learning analytics dashboard", "authors": "Naif Radi Aljohani, Ali Yusny Daud, Rabeeh Ayaz Abbasi, Jalal Suliman Alowibdi, Mohammad Basheri, Muhammad Ahtisham Aslam", "year": "2018", "doi": "https://doi.org/10.1016/j.chb.2018.03.035", "urlcode": "", "images": [{"image_code": "18-5", "file_name": "18-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "18-8", "file_name": "18-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "19", "title": "The design, development, and implementation of student-facing learning analytics dashboards", "authors": "Robert Bodily, Tarah K. Ikahihifo, Benjamin Mackley, Charles R. Graham", "year": "2018", "doi": "https://doi.org/10.1007/s12528-018-9186-0", "urlcode": "", "images": [{"image_code": "19-27", "file_name": "19-27.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "19-28", "file_name": "19-28.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "19-32", "file_name": "19-32.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "19-33", "file_name": "19-33.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "19-34", "file_name": "19-34.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "19-35", "file_name": "19-35.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "21", "title": "Associations between learning analytics dashboard exposure and motivation and self-regulated learning", "authors": "Stephen J. Aguilar, Stuart A. Karabenick, Stephanie D. Teasley, Clare Baek", "year": "2020", "doi": "https://doi.org/10.1016/j.compedu.2020.104085", "urlcode": "", "images": [{"image_code": "21-2", "file_name": "21-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "21-3", "file_name": "21-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "22", "title": "Exploring students' sensemaking of learning analytics dashboards", "authors": "Lisa-Angelique Lim, Shane Dawson, Srécko Joksimovíc, Dragan Gašević", "year": "2019", "doi": "https://doi.org/10.1145/3303772.3303804", "urlcode": "", "images": [{"image_code": "22-3", "file_name": "22-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "22-6", "file_name": "22-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "22-10", "file_name": "22-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "23", "title": "It's My Data! Tensions Among Stakeholders of a Learning Analytics Dashboard", "authors": "Kaiwen Sun, Abraham Hani Mhaidli, Sonakshi Watel, Christopher A. Brooks, Florian Schaub", "year": "2019", "doi": "https://doi.org/10.1145/3290605.3300824", "urlcode": "", "images": [{"image_code": "23-1", "file_name": "23-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "24", "title": "Towards Portable Learning Analytics Dashboards", "authors": "Andrii Vozniuk, Sten Govaerts, Denis Gillet", "year": "2013", "doi": "https://doi.org/10.1109/icalt.2013.126", "urlcode": "", "images": [{"image_code": "24-42", "file_name": "24-42.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "26", "title": "Exploring students’ interpretation of feedback delivered through learning analytics dashboards", "authors": "Linda Corrin, Paula De Barba", "year": "2014", "doi": "https://doi.org/10.14742/apubs.2014.1300", "urlcode": "", "images": [{"image_code": "26-2", "file_name": "26-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "32", "title": "Exploring critical factors of the perceived usefulness of a learning analytics dashboard for distance university students", "authors": "Irina Rets, Christothea Herodotou, Vaclav Bayer, Martin Hlosta, Bart Rienties", "year": "2021", "doi": "https://doi.org/10.1186/s41239-021-00284-9", "urlcode": "", "images": [{"image_code": "32-2", "file_name": "32-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "32-3", "file_name": "32-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "34", "title": "Effectiveness of a Learning Analytics Dashboard for Increasing Student Engagement Levels", "authors": "Gomathy Suganya Ramaswami, Teo Sušnjak, Anuradha Mathrani", "year": "2023", "doi": "https://doi.org/10.18608/jla.2023.7935", "urlcode": "", "images": [{"image_code": "34-8", "file_name": "34-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "36", "title": "Applying learning analytics dashboards based on process‐oriented feedback to improve students' learning effectiveness", "authors": "Dongqing Wang, Hou De Han", "year": "2020", "doi": "https://doi.org/10.1111/jcal.12502", "urlcode": "", "images": [{"image_code": "36-4", "file_name": "36-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "36-5", "file_name": "36-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "36-13", "file_name": "36-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "40", "title": "A Teacher-facing Learning Analytics Dashboard for Process-oriented Feedback in Online Learning", "authors": "Raphael Augusto de Sousa Dourado, Rodrigo Lins Rodrigues, Nivan Roberto Ferreira Júnior, Rafael Ferreira Mello, Alex Sandro Gomes, Katrien Verbert", "year": "2021", "doi": "https://doi.org/10.1145/3448139.3448187", "urlcode": "", "images": [{"image_code": "40-25", "file_name": "40-25.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "40-27", "file_name": "40-27.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "45", "title": "Technology Enhanced Learning Analytics Dashboard in Higher Education", "authors": "Rangana Jayashanka, Enosha Hettiarachchi, Kamalanath Priyantha Hewagamage", "year": "2022", "doi": "https://doi.org/10.34190/ejel.20.2.2189", "urlcode": "", "images": [{"image_code": "45-2", "file_name": "45-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-3", "file_name": "45-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-4", "file_name": "45-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-5", "file_name": "45-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-6", "file_name": "45-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-7", "file_name": "45-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-8", "file_name": "45-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-9", "file_name": "45-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-10", "file_name": "45-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "45-11", "file_name": "45-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "46", "title": "Adoption and impact of a learning analytics dashboard supporting the advisor—Student dialogue in a higher education institute in Latin America", "authors": "Tinne De Laet, Martijn Millecamp, Margarita Ortíz-Rojas, Alberto Jiménez, Ricardo Maya, Katrien Verbert", "year": "2020", "doi": "https://doi.org/10.1111/bjet.12962", "urlcode": "", "images": [{"image_code": "46-3", "file_name": "46-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "46-4", "file_name": "46-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "47", "title": "Intelligent Learning Analytics Dashboards: Automated Drill-Down Recommendations to Support Teacher Data Exploration", "authors": "Hassan Khosravi, Shiva Shabaninejad, Aneesha Bakharia, Shazia Wasim Sadiq, Marta Indulska, Dragan Gašević", "year": "2021", "doi": "https://doi.org/10.18608/jla.2021.7279", "urlcode": "", "images": [{"image_code": "47-68", "file_name": "47-68.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "49", "title": "CADA: a teacher-facing learning analytics dashboard to foster teachers’ awareness of students’ participation and discourse patterns in online discussions", "authors": "Rogers Kaliisa, Jan Arild Dolonen", "year": "2022", "doi": "https://doi.org/10.1007/s10758-022-09598-7", "urlcode": "", "images": [{"image_code": "49-1", "file_name": "49-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "49-2", "file_name": "49-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "50", "title": "Towards Textual Reporting in Learning Analytics Dashboards", "authors": "Alejandro Ramos-Soto, Manuel Lama, Borja Vázquez-Barreiros, Alberto Bugarín, M. Mucientes. S. Barro", "year": "2015", "doi": "https://doi.org/10.1109/icalt.2015.96", "urlcode": "", "images": [{"image_code": "50-8", "file_name": "50-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "50-9", "file_name": "50-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "53", "title": "Predict or describe? How learning analytics dashboard design influences motivation and statistics anxiety in an online statistics course", "authors": "Natercia Valle, Pavlo Antonenko, Denis Ribeiro do Valle, Max Sommer, Anne Corinne Huggins‐Manley, Kara Dawson, Dongho Kim, Benjamin Baiser", "year": "2021", "doi": "https://doi.org/10.1007/s11423-021-09998-z", "urlcode": "", "images": [{"image_code": "53-2", "file_name": "53-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "53-3", "file_name": "53-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "53-5", "file_name": "53-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "53-6", "file_name": "53-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "53-7", "file_name": "53-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "56", "title": "Development of Learning Analytics Dashboard based on Moodle Learning Management System", "authors": "Ong Kiat Xin, Dalbir Singh", "year": "2021", "doi": "https://doi.org/10.14569/ijacsa.2021.0120793", "urlcode": "", "images": [{"image_code": "56-1", "file_name": "56-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-5", "file_name": "56-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-7", "file_name": "56-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-8", "file_name": "56-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-11", "file_name": "56-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-12", "file_name": "56-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "56-13", "file_name": "56-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "57", "title": "Adaptation and evaluation of a learning analytics dashboard to improve academic support at three Latin American universities", "authors": "Julio Guerra, Margarita Ortíz-Rojas, Miguel Zúñiga‐Prieto, Eliana Scheihing, Alberto Jiménez, Tom Broos, Tinne De Laet, Katrien Verbert", "year": "2020", "doi": "https://doi.org/10.1111/bjet.12950", "urlcode": "", "images": [{"image_code": "57-3", "file_name": "57-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "57-4", "file_name": "57-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "57-5", "file_name": "57-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "57-6", "file_name": "57-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "57-7", "file_name": "57-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "57-8", "file_name": "57-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "61", "title": "Evaluation of a Data-To-Text System for Verbalizing a Learning Analytics Dashboard", "authors": "Alejandro Ramos-Soto, Borja Vázquez-Barreiros, Alberto Bugarín, Adriana Gewerc Barujel, Senén Barro", "year": "2016", "doi": "https://doi.org/10.1002/int.21835", "urlcode": "", "images": [{"image_code": "61-1", "file_name": "61-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "61-2", "file_name": "61-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "61-3", "file_name": "61-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "61-5", "file_name": "61-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "68", "title": "The effects of a learning analytics dashboard on teachers’ diagnosis and intervention in computer-supported collaborative learning", "authors": "Haogang Bao, Yanyan Li, You Hong Su, Shuang Xing, Nian‐Shing Chen, Carolyn Penstein Rosé", "year": "2021", "doi": "https://doi.org/10.1080/1475939x.2021.1902383", "urlcode": "", "images": [{"image_code": "68-20", "file_name": "68-20.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "68-21", "file_name": "68-21.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "68-22", "file_name": "68-22.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "69", "title": "Chatting with a Learning Analytics Dashboard: The Role of Generative AI Literacy on Learner Interaction with Conventional and Scaffolding Chatbots", "authors": "Yueqiao Jin, Kaixun Yang, Lixiang Yan, Vanessa Echeverría, Linxuan Zhao, Riordan Alfredo, Mikaela Elizabeth Milesi, Jie Xiang Fan, Xinyu Li, Dragan Gašević, Roberto Martínez‐Maldonado", "year": "2025", "doi": "https://doi.org/10.1145/3706468.3706545", "urlcode": "", "images": [{"image_code": "69-4", "file_name": "69-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "91", "title": "Learning Analytics Dashboard Design and Evaluation to Support Student Self-Regulation of Study Behaviour", "authors": "Lars de Vreugd, Anouschka van Leeuwen, Renée S. Jansen, Marieke F. van der Schaaf", "year": "2024", "doi": "https://doi.org/10.18608/jla.2024.8529", "urlcode": "", "images": [{"image_code": "91-12", "file_name": "91-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "91-14", "file_name": "91-14.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "100", "title": "Specification and evaluation of an assessment engine for educational games: Empowering educators with an assessment editor and a learning analytics dashboard", "authors": "Yaëlle Chaudy, Thomas M Connolly", "year": "2018", "doi": "https://doi.org/10.1016/j.entcom.2018.07.003", "urlcode": "", "images": [{"image_code": "100-9", "file_name": "100-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "100-10", "file_name": "100-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "103", "title": "The Role of Self-Regulated Learning in the Design, Implementation, and Evaluation of Learning Analytics Dashboards", "authors": "Carl C. Haynes", "year": "2020", "doi": "https://doi.org/10.1145/3386527.3406732", "urlcode": "", "images": [{"image_code": "103-1", "file_name": "103-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "103-2", "file_name": "103-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "103-3", "file_name": "103-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "105", "title": "More, better feedback please: are learning analytics dashboards (LAD) the solution to a wicked problem?", "authors": "Simon Collingwood Kitto, Michelle Chiang, Olivia Ng, Jennifer Cleland", "year": "2024", "doi": "https://doi.org/10.1007/s10459-024-10358-8", "urlcode": "", "images": [{"image_code": "105-1", "file_name": "105-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "105-2", "file_name": "105-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "105-3", "file_name": "105-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "105-4", "file_name": "105-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "109", "title": "Integrating multi-modal learning analytics dashboard in K-12 education: insights for enhancing orchestration and teacher decision-making", "authors": "Isabella Possaghi, Boban Vesin, Feiran Zhang, Kshitij Sharma, Cecilie Knudsen, Håkon Bjørkum, Sofia Papavlasopoulou", "year": "2025", "doi": "https://doi.org/10.1186/s40561-025-00410-4", "urlcode": "", "images": [{"image_code": "109-3", "file_name": "109-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "110", "title": "From awareness to empowerment: self-determination theory-informed learning analytics dashboards to enhance student engagement in asynchronous online courses", "authors": "Jeongwon Lee, Dongho Kim", "year": "2024", "doi": "https://doi.org/10.1007/s12528-024-09416-2", "urlcode": "", "images": [{"image_code": "110-4", "file_name": "110-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "119", "title": "Overcoming the MOOC Data Deluge with Learning Analytic Dashboards", "authors": "Lorenzo Vigentini, Andrew John Clayphan, Xia Zhang, Mahsa Chitsaz", "year": "2017", "doi": "https://doi.org/10.1007/978-3-319-52977-6_6", "urlcode": "", "images": [{"image_code": "119-2", "file_name": "119-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "119-9", "file_name": "119-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "119-11", "file_name": "119-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "140", "title": "Designing a learning analytics dashboard for twitter-facilitated teaching", "authors": "Anatoliy A. Gruzd, Nadia K. Conroy", "year": "2018", "doi": "https://doi.org/10.1145/3231644.3231704", "urlcode": "", "images": [{"image_code": "140-3", "file_name": "140-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "151", "title": "Facilitating the Use of Data From Multiple Sources for Formative Learning in the Context of Digital Assessments: Informing the Design and Development of Learning Analytic Dashboards", "authors": "Priya Kannan, Diego Zapata‐Rivera", "year": "2022", "doi": "https://doi.org/10.3389/feduc.2022.913594", "urlcode": "", "images": [{"image_code": "151-1", "file_name": "151-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "151-2", "file_name": "151-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "151-3", "file_name": "151-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "159", "title": "The “IKEA Model” for pragmatic development of a custom learning analytics dashboard", "authors": "Leah P. Macfadyen, Alison Myers", "year": "2023", "doi": "https://doi.org/10.14742/apubs.2023.465", "urlcode": "", "images": [{"image_code": "159-2", "file_name": "159-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "162", "title": "Desenvolvimento de um Learning Analytics Dashboard a partir de Modelos de Mineração de Dados Educacionais", "authors": "Gabriel Lenon Barros Silva, Janaína Alexandre de Carvalho, Alexandre Magno Andrade Maciel", "year": "2021", "doi": "https://doi.org/10.25286/repa.v6i3.1688", "urlcode": "", "images": [{"image_code": "162-10", "file_name": "162-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "162-13", "file_name": "162-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "162-14", "file_name": "162-14.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "165", "title": "M2LADS: A System for Generating MultiModal Learning Analytics Dashboards in Open Education", "authors": "Álvaro Becerra, Roberto Daza, Ruth Cobos, Aythami Morales, Mutlu Cukurova, Julián Fiérrez", "year": "2023", "doi": "https://doi.org/10.48550/arxiv.2305.12561", "urlcode": "", "images": [{"image_code": "165-9", "file_name": "165-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "172", "title": "A Trusted Learning Analytics Dashboard for Displaying OER", "authors": "Atezaz Ahmad, Ivaylo Ivanov Yordanov, Jane Yin-Kim Yau, Jan David Schneider, Hendrik Drachsler", "year": "2023", "doi": "https://doi.org/10.1007/978-3-658-38703-7_15", "urlcode": "", "images": [{"image_code": "172-2", "file_name": "172-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "199", "title": "Co-designing, developing, and implementing multiple learning analytics dashboards for data-driven decision-making in education: a design-based research approach", "authors": "Zeynab Artemis Mohseni, Italo Masiello", "year": "2025", "doi": "https://doi.org/10.1007/s11423-025-10577-9", "urlcode": "", "images": [{"image_code": "199-2", "file_name": "199-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-3", "file_name": "199-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-4", "file_name": "199-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-5", "file_name": "199-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-6", "file_name": "199-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-7", "file_name": "199-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-8", "file_name": "199-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-11", "file_name": "199-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "199-12", "file_name": "199-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "204", "title": "A Student-Centered Learning Analytics Dashboard Towards Course Goal Achievement in STEM Education", "authors": "Sebastian Buvari, Olga Viberg, Alessandro Iop, Mario Alfonso Romero", "year": "2023", "doi": "https://doi.org/10.1007/978-3-031-42682-7_64", "urlcode": "", "images": [{"image_code": "204-2", "file_name": "204-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "204-3", "file_name": "204-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "208", "title": "Students as Lead Designers of Learning Analytics Dashboards: Lessons learned in a Northern Irish University", "authors": "Paul Joseph‐Richard", "year": "2020", "doi": "https://doi.org/10.33422/2nd.rteconf.2020.03.47", "urlcode": "", "images": [{"image_code": "208-5", "file_name": "208-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "209", "title": "Analyzing learners' behavior and discourse within large online communities: a Social Learning Analytics Dashboard", "authors": "Rogério Ferreira da Silva, Itana Maria de Souza Gimenes, José Carlos Maldonado", "year": "2021", "doi": "https://doi.org/10.5753/sbie.2021.217468", "urlcode": "", "images": [{"image_code": "209-3", "file_name": "209-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "209-5", "file_name": "209-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "209-7", "file_name": "209-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "209-9", "file_name": "209-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "214", "title": "Learning analytics dashboard para apoyar la enseñanza de la programación en educación a distancia", "authors": "Víctor Alfonso Martínez Martínez, Lorena Alonso Ramírez, Luis G. Montané-Jiménez", "year": "2024", "doi": "https://doi.org/10.36825/riti.12.26.013", "urlcode": "", "images": [{"image_code": "214-13", "file_name": "214-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "214-14", "file_name": "214-14.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "219", "title": "Teaching with Analytics: Towards a Situated Model of Instructional Decision-Making", "authors": "Alyssa Friend Wise, Yeonji Jung", "year": "2019", "doi": "https://doi.org/10.18608/jla.2019.62.4", "urlcode": "", "images": [{"image_code": "219-6", "file_name": "219-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "220", "title": "Addressing learner issues with StepUp!", "authors": "José Luis Santos, Katrien Verbert, Sten Govaerts, Erik Duval", "year": "2013", "doi": "https://doi.org/10.1145/2460296.2460301", "urlcode": "", "images": [{"image_code": "220-1", "file_name": "220-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "222", "title": "The effect of providing learning analytics on student behaviour and performance in programming: a randomised controlled experiment", "authors": "J.A. Hellings, Carla Haelermans", "year": "2020", "doi": "https://doi.org/10.1007/s10734-020-00560-z", "urlcode": "", "images": [{"image_code": "222-1", "file_name": "222-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "226", "title": "Effects of personalised feedback approach on knowledge building, emotions, co-regulated behavioural patterns and cognitive load in online collaborative learning", "authors": "Lanqin Zheng, Lu Zhong, Jiayu Niu", "year": "2021", "doi": "https://doi.org/10.1080/02602938.2021.1883549", "urlcode": "", "images": [{"image_code": "226-19", "file_name": "226-19.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "226-20", "file_name": "226-20.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "226-21", "file_name": "226-21.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "230", "title": "Effects and acceptance of precision education in an AI-supported smart learning environment", "authors": "Yung-Hsiang Hu", "year": "2021", "doi": "https://doi.org/10.1007/s10639-021-10664-3", "urlcode": "", "images": [{"image_code": "230-4", "file_name": "230-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "230-5", "file_name": "230-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "232", "title": "When learning analytics dashboard is explainable: An exploratory study on the effect of GenAI-supported learning analytics dashboard", "authors": "Chen, Angxuan", "year": "2025", "doi": "https://doi.org/10.48550/arxiv.2506.16312", "urlcode": "", "images": [{"image_code": "232-1", "file_name": "232-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "232-2", "file_name": "232-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "232-3", "file_name": "232-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "233", "title": "Dashboards for Computer-Supported Collaborative Learning", "authors": "Arita Li Liu, John C. Nesbit", "year": "2019", "doi": "https://doi.org/10.1007/978-3-030-13743-4_9", "urlcode": "", "images": [{"image_code": "233-3", "file_name": "233-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "233-5", "file_name": "233-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "233-7", "file_name": "233-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "233-8", "file_name": "233-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "233-12", "file_name": "233-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "238", "title": "Quantum of Choice: How learners’ feedback monitoring decisions, goals and self-regulated learning skills are related", "authors": "Ioana Jivet, Jacqueline Wong, Maren Scheffel, Manuel Valle Torre, Marcus M. Specht, Hendrik Drachsler", "year": "2021", "doi": "https://doi.org/10.1145/3448139.3448179", "urlcode": "", "images": [{"image_code": "238-2", "file_name": "238-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "238-6", "file_name": "238-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "256", "title": "Promoting higher education students’ self-regulated learning through learning analytics: A qualitative study", "authors": "Riina Kleimola, Laura Hirsto, Heli Ruokamo", "year": "2024", "doi": "https://doi.org/10.1007/s10639-024-12978-4", "urlcode": "", "images": [{"image_code": "256-1", "file_name": "256-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "260", "title": "door onderzoek geïnformeerde ontwikkeling van een Learning Analytics dashboard.", "authors": "Ellen De Bruyne, Laura Herrewijn, Amber Hoefkens, Wannes Heirman, Gert Vanthournout, Pieter Depessemier", "year": "2023", "doi": "https://doi.org/10.59532/tvho.v41i1.13948", "urlcode": "", "images": [{"image_code": "260-6", "file_name": "260-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "262", "title": "Learning and Collaboration Technologies. Human and Technology Ecosystems", "authors": "", "year": "2020", "doi": "https://doi.org/10.1007/978-3-030-50506-6", "urlcode": "", "images": [{"image_code": "262-13", "file_name": "262-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "273", "title": "Exploring inclusivity, transparency, explainability and agency in learning analytics dashboard design", "authors": "Daniel Hickmott, James Goulding, Erica Southgate, Tess Rendoth, Erika Spray, Mirella Atherton", "year": "2025", "doi": "https://doi.org/10.65106/apubs.2025.2669", "urlcode": "", "images": [{"image_code": "273-1", "file_name": "273-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "280", "title": "Student Awareness and Preferences for Learning Analytics Dashboards: Misalignments with Self-Regulation of Learning", "authors": "Elena Cano García, Maria-del-Mar Suárez", "year": "2026", "doi": "https://doi.org/10.1007/s10758-026-09969-4", "urlcode": "", "images": [{"image_code": "280-2", "file_name": "280-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "345", "title": "User-Centered Dashboard Design: Iterative Design to Support Teacher Informational Needs in Online Learning Contexts", "authors": "Ryan Perez", "year": "2019", "doi": "https://doi.org/10.3102/1432967", "urlcode": "", "images": [{"image_code": "345-6", "file_name": "345-6.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "345-11", "file_name": "345-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "349", "title": "Can theory-driven learning analytics dashboard enhance human-AI collaboration in writing learning? Insights from an empirical experiment", "authors": "Angxuan Chen, Lian, Jingjing, Kuang, Xinran, Jiyou Jia", "year": "2025", "doi": "https://doi.org/10.48550/arxiv.2506.19364", "urlcode": "", "images": [{"image_code": "349-2", "file_name": "349-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "349-3", "file_name": "349-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "349-4", "file_name": "349-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "350", "title": "Learning and Collaboration Technologies. Designing, Developing and Deploying Learning Experiences", "authors": "", "year": "2020", "doi": "https://doi.org/10.1007/978-3-030-50513-4", "urlcode": "", "images": [{"image_code": "350-30", "file_name": "350-30.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "350-31", "file_name": "350-31.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "350-111", "file_name": "350-111.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "350-112", "file_name": "350-112.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "350-113", "file_name": "350-113.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "357", "title": "IguideME", "authors": "Damien S. Fleur, Max S. Marshall, Miguel Pieters, Nataša Brouwer, Gerrit Oomens, Angelos Konstantinidis, Koos Winnips, Sylvia Moes, Wouter van den Bos, Bert Bredeweg, Erwin Alexander van Vliet", "year": "2023", "doi": "https://doi.org/10.18608/jla.2023.7853", "urlcode": "", "images": [{"image_code": "357-8", "file_name": "357-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "377", "title": "Enhancing Feedback Uptake and Self-Regulated Learning in Procedural Skills Training", "authors": "Ignacio Villagrán, Rocío Hernández, Gregory Schuit, Andrés Neyem, Javiera Fuentes, Loreto Larrondo, Elisa Margozzini, María T. Hurtado, Zoe Iriarte, Constanza Miranda, Julián Varas, Isabel Hilliger", "year": "2024", "doi": "https://doi.org/10.18608/jla.2024.8195", "urlcode": "", "images": [{"image_code": "377-7", "file_name": "377-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "377-9", "file_name": "377-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "388", "title": "Making Understandable Game Learning Analytics for Teachers", "authors": "Antonio Calvo-Morata, Cristina Alonso‐Fernández, Manuel Freire, Iván Martínez‐Ortiz, Baltasar Fernández‐Manjón", "year": "2018", "doi": "https://doi.org/10.1007/978-3-319-96565-9_11", "urlcode": "", "images": [{"image_code": "388-3", "file_name": "388-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "388-4", "file_name": "388-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "388-5", "file_name": "388-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "398", "title": "Supporting Teachers in Group Work Formation and Analytics for In-class Group Activities", "authors": "Changhao Liang, Ivica Botički, Hiroaki Ogata", "year": "2019", "doi": "https://doi.org/10.58459/icce.2019.654", "urlcode": "", "images": [{"image_code": "398-5", "file_name": "398-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "399", "title": "Differences of online learning behaviors and eye-movement between students having different personality traits", "authors": "Bo Sun, Song Lai, Congcong Xu, Rong Xiao, Yungang Wei, Yongkang Xiao", "year": "2017", "doi": "https://doi.org/10.1145/3139513.3139527", "urlcode": "", "images": [{"image_code": "399-2", "file_name": "399-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "402", "title": "LearningViz: a dashboard for visualizing, analyzing and closing learning performance gaps—a case study approach", "authors": "Bo Pei, Ying Cheng, Alex Ambrose, Eva Dziadula, Wanli Xing, Jie Lu", "year": "2024", "doi": "https://doi.org/10.1186/s40561-024-00346-1", "urlcode": "", "images": [{"image_code": "402-2", "file_name": "402-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "402-10", "file_name": "402-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "406", "title": "Learning analytics for academic paths: student evaluations of two dashboards for study planning and monitoring", "authors": "Anni Silvola, Amanda M. Sjoblom, Piia Näykki, Egle Gedrimiene, Hanni Muukkonen", "year": "2023", "doi": "https://doi.org/10.14786/flr.v11i2.1277", "urlcode": "", "images": [{"image_code": "406-13", "file_name": "406-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "407", "title": "Same graph, different data: A usability study of a student-facing dashboard based on self-regulated learning theory", "authors": "Paula De Barba, Eduardo Araújo de Oliveira, Xinyue Hu", "year": "2022", "doi": "https://doi.org/10.14742/apubs.2022.168", "urlcode": "", "images": [{"image_code": "407-3", "file_name": "407-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "407-4", "file_name": "407-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "407-11", "file_name": "407-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "415", "title": "Exploring the impact of chat-based collaborative activities and SRL-focused interventions on students’ self-regulation profiles, participation in collaborative activities, retention, and learning in MOOCs", "authors": "Georgios Psathas, Stergios D. Tegos, Stavros Demetriadis, Τhrasyvoulos Tsiatsos", "year": "2023", "doi": "https://doi.org/10.1007/s11412-023-09394-0", "urlcode": "", "images": [{"image_code": "415-2", "file_name": "415-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "415-3", "file_name": "415-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "428", "title": "Impact of an adaptive environment based on learning analytics on pre-service science teacher behavior and self-regulation", "authors": "Yousri Attia Mohamed Abouelenein, Shaimaa Abdul Salam Selim, Tahani Ibrahim Aldosemani", "year": "2025", "doi": "https://doi.org/10.1186/s40561-024-00340-7", "urlcode": "", "images": [{"image_code": "428-9", "file_name": "428-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "434", "title": "Is A Star A Document? Catalogued Students and Learning Analytics", "authors": "Lesley Jane Gourlay", "year": "2024", "doi": "https://doi.org/10.1007/s42438-024-00489-x", "urlcode": "", "images": [{"image_code": "434-1", "file_name": "434-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "461", "title": "Enhancing Team-Based Medical Simulations: Learning Through Reflection with Analytics and AI Tools", "authors": "Crina I. Damşa, Vanessa Echeverría, Vitaliy Popov, Olga Chernikova, Klas Karlgren, Mikaela Elizabeth Milesi, Ariel Jin, Linxuan Zhao, Riordan Alfredo, Lixiang Yan, Dragan Gašević, Roberto Martínez‐Maldonado, Yaxuan Li, Kunpeng Huang, Alanson P. Sample, Bryan M. Harmer, James Cooke, Michael Cole, Xuechen Zhang, Frank Fischer, Meltem Akoyak-Yildiz, Daniel Sánchez, Rachelle Esterhazy, Hugh Alexander von Arnim, Lena Günterberg Heyn, Edda Aslaug Johansen, Susanne Olesen, Ellen Wesenberg Larsen, Carmen Louwerens, Hilde Eide", "year": "2025", "doi": "https://doi.org/10.22318/cscl2025.323151", "urlcode": "", "images": [{"image_code": "461-11", "file_name": "461-11.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "473", "title": "The Effects of Generative AI Agents and Scaffolding on Enhancing Students' Comprehension of Visual Learning Analytics", "authors": "Lixiang Yan, Roberto Martínez‐Maldonado, Yueqiao Jin, Vanessa Echeverría, Mikaela Elizabeth Milesi, Jie Fan, Linxuan Zhao, Riordan Alfredo, Xinyu Li, Dragan Gašević", "year": "2024", "doi": "https://doi.org/10.48550/arxiv.2409.11645", "urlcode": "", "images": [{"image_code": "473-7", "file_name": "473-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "473-9", "file_name": "473-9.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "473-13", "file_name": "473-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "475", "title": "Dashboard for Actionable Feedback on Learning Skills: How Learner Profile Affects Use.", "authors": "Tom Broos, Laurie Peeters, Katrien Verbert, Carolien Van Soom, Greet Langie, Tinne De Laet", "year": "2017", "doi": "", "urlcode": "", "images": [{"image_code": "475-1", "file_name": "475-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "488", "title": "Natural Language Processing Based Analytics Dashboard for Online Learning Platforms", "authors": "May Kristine Jonson Carlon, May Kristine Jonson Carlon, ジェフリー スコット クロス, Jeffrey S. Cross", "year": "2022", "doi": "", "urlcode": "", "images": [{"image_code": "488-4", "file_name": "488-4.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "489", "title": "DojoAnalytics", "authors": "Ángel Suárez, Stefaan Ternier, René Helbig, Marcus M. Specht", "year": "2017", "doi": "https://doi.org/10.1145/3136907.3136939", "urlcode": "", "images": [{"image_code": "489-1", "file_name": "489-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "489-5", "file_name": "489-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "489-13", "file_name": "489-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "491", "title": "FROM DASHBOARD TO CLASSROOM: A CASE STUDY OF TEACHER-FACING DASHBOARD IMPACT ON LEARNING PERFORMANCE AND BEHAVIORS", "authors": "Xuewang Geng, Kohei Ozaki and Masanori Yamada", "year": "2025", "doi": "https://doi.org/10.33965/celda2025_202509l018", "urlcode": "", "images": [{"image_code": "491-2", "file_name": "491-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "491-5", "file_name": "491-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "501", "title": "Methodology for the Participatory Design of a Learner-Facing Analytics Dashboard", "authors": "Marie-Luce Bourguet", "year": "2023", "doi": "https://doi.org/10.58459/icce.2023.1475", "urlcode": "", "images": [{"image_code": "501-1", "file_name": "501-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "504", "title": "Knowing me, knowing you:Interdisciplinary approaches to metacognition, social cognition and motivation in higher education", "authors": "D.S.; id_orcid 0000-0003-4836-5255 Fleur", "year": "2026", "doi": "", "urlcode": "", "images": [{"image_code": "504-5", "file_name": "504-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "540", "title": "Closing the Learning Analytics Loop through Explanatory Dashboard Design", "authors": "Sonja Klein, Charlott Sellberg", "year": "2025", "doi": "https://doi.org/10.21203/rs.3.rs-7408850/v1", "urlcode": "", "images": [{"image_code": "540-5", "file_name": "540-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "544", "title": "StoryLensEdu: Personalized Learning Report Generation through Narrative-Driven Multi-Agent Systems", "authors": "Leixian Shen, Yan Luo, Rui Sheng, Yujia He, Haotian Li, Leni Yang, Huamin Qu", "year": "2026", "doi": "", "urlcode": "", "images": [{"image_code": "544-5", "file_name": "544-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "544-7", "file_name": "544-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "544-17", "file_name": "544-17.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "544-21", "file_name": "544-21.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "544-23", "file_name": "544-23.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "560", "title": "Feedback mit Learning Analytics – Interdisziplinäres Design eines Dashboards für Studierende", "authors": "Lars van Rijn, Heike Karolyi, Michael Hanses, Claudia de Witt", "year": "2024", "doi": "https://doi.org/10.21240/zfhe/19-4/05", "urlcode": "", "images": [{"image_code": "560-1", "file_name": "560-1.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "568", "title": "Interactive learning dashboards: rethinking learning visualisations as engagement tools", "authors": "Laura Graf, Patrick Bassner, Maximilian Anzinger, Felix Dietrich, Stephan Krusche, Oleksandra Poquet", "year": "2026", "doi": "https://doi.org/10.1007/s10639-026-14082-1", "urlcode": "", "images": [{"image_code": "568-2", "file_name": "568-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "578", "title": "Achievement emotion prediction in learning environments through classification of facial and gaze features", "authors": "Mohammadreza Doroodian, Mohammadreza Doroodian", "year": "", "doi": "", "urlcode": "", "images": [{"image_code": "578-2", "file_name": "578-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "584", "title": "Insan AI: Integrated Artificial Intelligence Learning Platform", "authors": "Universitas Insan Pembangunan Indonesia, Jl. Raya Serang KM 10, 15810, Tangerang, Indonesia, Winanti, Yoga Prihastomo, Yulius Denny Prabowo, Achmad Sidik, Penny Hendriyati", "year": "2026", "doi": "https://doi.org/10.5815/ijieeb.2026.01.09", "urlcode": "", "images": [{"image_code": "584-7", "file_name": "584-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "584-10", "file_name": "584-10.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "598", "title": "The impact of artificial intelligence and learning analytics on students’ academic performance", "authors": "Mohd. Shuyeb, Surinder Kumar, Mukesh Kumar, Ankur Jain", "year": "2026", "doi": "https://doi.org/10.70593/deepsci.0202032", "urlcode": "", "images": [{"image_code": "598-8", "file_name": "598-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "611", "title": "Learning Analytics-Driven Personalized Exercise Prescriptions in Secondary School Physical Education: A Quasi-Experimental Evaluation of an AI-Supported Formative Assessment System", "authors": "bingbing shao, jing su, Yu Zhang, Chuan Fu", "year": "2026", "doi": "https://doi.org/10.21203/rs.3.rs-10042816/v1", "urlcode": "", "images": [{"image_code": "611-3", "file_name": "611-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "611-7", "file_name": "611-7.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "611-8", "file_name": "611-8.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "626", "title": "Enhancing Student Engagement through Learning Analytics : A User-Centered Dashboard for LMS Platforms", "authors": "Ghader Azad, Hasti", "year": "2025", "doi": "", "urlcode": "", "images": [{"image_code": "626-16", "file_name": "626-16.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "626-18", "file_name": "626-18.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "626-20", "file_name": "626-20.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "626-22", "file_name": "626-22.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "626-24", "file_name": "626-24.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "655", "title": "Data-Driven Decision Support System for Analyzing Student Engagement in Learning Analytics", "authors": "Omar Talbi, Abdelkader Ouared", "year": "2024", "doi": "https://doi.org/10.2991/978-94-6463-496-9_27", "urlcode": "", "images": [{"image_code": "655-35", "file_name": "655-35.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "655-37", "file_name": "655-37.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "656", "title": "An analysis on the functions and educational implications of AI digital mathematics textbooks in Korean elementary schools", "authors": "Mangoo Park", "year": "2025", "doi": "https://doi.org/10.63311/mathedu.25.64411", "urlcode": "", "images": [{"image_code": "656-2", "file_name": "656-2.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "656-3", "file_name": "656-3.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}, {"image_code": "656-13", "file_name": "656-13.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "658", "title": "Development of Smart Andragogical LMS–Padlet Based on Behavioral Learning Analytics in the Course of Student Understanding and Automotive Indonesia's Teacher Professional Education (PPG) Program Learning", "authors": "Dani Irawan, Citra Kurniawan, Mahfudi Sahly Subandi, Ahmad, Nike Aulia Septianis, Ahmat Nurion Makki", "year": "2026", "doi": "https://doi.org/10.59944/jipsi.v5i3.1379", "urlcode": "", "images": [{"image_code": "658-12", "file_name": "658-12.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "668", "title": "Modelling Classroom Co-Regulation from LMS Interaction Logs for Real-Time Classroom Orchestration", "authors": "Shoukath TK", "year": "2026", "doi": "https://doi.org/10.59543/jidmis.v3.1000", "urlcode": "", "images": [{"image_code": "668-19", "file_name": "668-19.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}, {"id": "679", "title": "AI-Enabled Pedagogical Framework for Integrating Indian Knowledge Systems in Teacher Education", "authors": "Shrawan Kumar Sharma, Nirupama Dubey, Raj Sinha, Rahul Kumar, Ashish Sen, Prathviraj Singh Rathore", "year": "2026", "doi": "https://doi.org/10.70917/ijcisim-2026-4675", "urlcode": "", "images": [{"image_code": "679-5", "file_name": "679-5.png", "target": "teacher", "machine_leaning": "false", "techniques": ["scatterplot", "pie", "barplot", "chat"], "data_source": "AVA", "ava": "moodle"}]}],
+                filterOptions: {"target": ["student", "teacher"], "machine_leaning": ["false", "true"], "techniques": ["barplot", "chat", "pie", "scatterplot"], "data_source": ["AVA"], "ava": ["blackboard", "moodle"]},
+                searchQuery: '',
+                filters: {
+                    target: '',
+                    code_available: 'all',
+                    machine_leaning: '',
+                    data_source: '',
+                    ava: '',
+                    techniques: ''
+                },
+                filteredArticles: [],
+                summary: {
+                    articlesCount: 0,
+                    imagesCount: 0,
+                    codeAvailableArticlesCount: 0,
+                    target: {},
+                    machine_leaning: {},
+                    data_source: {},
+                    ava: {},
+                    techniques: {}
+                },
+                modalOpen: false,
+                selectedImg: {},
+                selectedArticle: {},
+
+                init() {
+                    this.applyFilters();
+                },
+
+                resetFilters() {
+                    this.searchQuery = '';
+                    this.filters = {
+                        target: '',
+                        code_available: 'all',
+                        machine_leaning: '',
+                        data_source: '',
+                        ava: '',
+                        techniques: ''
+                    };
+                    this.applyFilters();
+                },
+
+                openModal(img, article) {
+                    this.selectedImg = img;
+                    this.selectedArticle = article;
+                    this.modalOpen = true;
+                },
+
+                applyFilters() {
+                    const q = this.searchQuery.toLowerCase().trim();
+                    const f = this.filters;
+
+                    const results = [];
+
+                    const newSummary = {
+                        articlesCount: 0,
+                        imagesCount: 0,
+                        codeAvailableArticlesCount: 0,
+                        target: {},
+                        machine_leaning: {},
+                        data_source: {},
+                        ava: {},
+                        techniques: {}
+                    };
+
+                    this.rawArticles.forEach(article => {
+                        // Verifica busca textual
+                        const matchesText = !q || 
+                            article.title.toLowerCase().includes(q) ||
+                            article.authors.toLowerCase().includes(q) ||
+                            article.id.toLowerCase().includes(q);
+
+                        if (!matchesText) return;
+                        const hasCode = Boolean(article.urlcode);
+                        if (f.code_available === 'available' && !hasCode) return;
+                        if (f.code_available === 'unavailable' && hasCode) return;
+
+                        // Filtra imagens do artigo
+                        const matchingImages = article.images.filter(img => {
+                            if (f.target && img.target !== f.target) return false;
+                            if (f.machine_leaning && img.machine_leaning !== f.machine_leaning) return false;
+                            if (f.data_source && img.data_source !== f.data_source) return false;
+                            if (f.ava && img.ava !== f.ava) return false;
+                            if (f.techniques && !img.techniques.includes(f.techniques)) return false;
+                            return true;
+                        });
+
+                        if (matchingImages.length > 0) {
+                            results.push({
+                                ...article,
+                                matchingImages: matchingImages
+                            });
+
+                            newSummary.articlesCount++;
+                            if (article.urlcode) newSummary.codeAvailableArticlesCount++;
+                            newSummary.imagesCount += matchingImages.length;
+
+                            matchingImages.forEach(img => {
+                                if (img.target) newSummary.target[img.target] = (newSummary.target[img.target] || 0) + 1;
+                                if (img.machine_leaning) newSummary.machine_leaning[img.machine_leaning] = (newSummary.machine_leaning[img.machine_leaning] || 0) + 1;
+                                if (img.data_source) newSummary.data_source[img.data_source] = (newSummary.data_source[img.data_source] || 0) + 1;
+                                if (img.ava) newSummary.ava[img.ava] = (newSummary.ava[img.ava] || 0) + 1;
+                                img.techniques.forEach(t => {
+                                    newSummary.techniques[t] = (newSummary.techniques[t] || 0) + 1;
+                                });
+                            });
+                        }
+                    });
+
+                    this.filteredArticles = results;
+                    this.summary = newSummary;
+                }
+            };
+        }
+    </script>
+</body>
+</html>
